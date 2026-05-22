@@ -82,6 +82,4 @@ docker compose up --build
 
 This starts Django with PostgreSQL.
 
-## Production Notes
 
-Set a strong `DJANGO_SECRET_KEY`, disable `DJANGO_DEBUG`, configure `DJANGO_ALLOWED_HOSTS`, set `DATABASE_URL`, and use a real email backend. Behind HTTPS, set `SESSION_COOKIE_SECURE=True`, `CSRF_COOKIE_SECURE=True`, `SECURE_SSL_REDIRECT=True`, and an HSTS value such as `SECURE_HSTS_SECONDS=31536000`. Static files are collected in the Docker image; for high-traffic production, serve media from object storage.
