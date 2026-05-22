@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Loan Detail | SmartLoan{% endblock %}
+{% block content %}
+<section class="form-page">
+  <div class="container detail-page">
+    <div class="detail-hero panel">
+      <div>
+        <p class="eyebrow">{{ application.loan_type.name }}</p>
+        <h1>{{ application.full_name }}</h1>
+        <p>{{ application.purpose }}</p>
+      </div>
+      <div class="status-stack">
+        <span class="status status-{{ application.status|lower }}">{% if application.status == 'UNDER_REVIEW' %}Pending Review{% else %}{{ application.get_status_display }}{% endif %}</span>
+        {% if application.reviewed_at %}<small>Reviewed {{ application.reviewed_at|date:"M d, Y H:i" }}</small>{% endif %}
+      </div>
+    </div>
+
+    <div class="detail-grid align-start">
+      <div class="panel">
+        <h2>Applicant details</h2>
+        <div class="info-grid">
+          <div><span>Email</span><strong>{{ application.email }}</strong></div>
+          <div><span>Phone</span><strong>{{ application.phone }}</strong></div>
+          <div><span>PAN</span><strong>{{ application.pan_number }}</strong></div>
+          <div><span>Aadhaar</span><strong>{{ application.aadhaar_number }}</strong></div>
+          <div class="wide"><span>Address</span><strong>{{ application.address }}</strong></div>
+        </div>
+        <h2 class="mt-4">Employment details</h2>
+        <div class="info-grid">
+          <div><span>Employment</span><strong>{{ application.get_employment_type_display }}</strong></div>
+          <div><span>Salary</span><strong>INR {{ application.salary|floatformat:0 }}</strong></div>
+          <div><span>Existing loans</span><strong>INR {{ application.existing_loans|floatformat:0 }}</strong></div>
+          <div><span>CIBIL score</span><strong>{{ application.cibil_score }}</strong></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>ML prediction and risk</h2>
+        <div class="metric-grid compact">
+          <div class="metric-card"><span>Prediction</span><strong>{{ application.prediction_label|default:"Pending" }}</strong></div>
+          <div class="metric-card"><span>Approval</span><strong>{{ application.approval_probability }}%</strong></div>
+          <div class="metric-card"><span>Risk score</span><strong>{{ application.risk_score }}</strong></div>
+          <div class="metric-card"><span>Risk level</span><strong>{{ application.risk_level }}</strong></div>
+        </div>
+        {% if application.rejection_reason %}<div class="alert alert-warning mt-3">{{ application.rejection_reason }}</div>{% endif %}
+        {% if application.officer_remarks %}<div class="alert alert-info mt-3"><strong>Officer remarks:</strong> {{ application.officer_remarks }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="detail-grid align-start">
+      <div class="panel">
+        <h2>EMI estimation</h2>
+        <div class="info-grid">
+          <div><span>Loan amount</span><strong>INR {{ application.loan_amount|floatformat:0 }}</strong></div>
+          <div><span>Duration</span><strong>{{ application.loan_duration_months }} months</strong></div>
+          <div><span>Interest rate</span><strong>{{ application.loan_type.base_interest_rate }}%</strong></div>
+          <div><span>Monthly EMI</span><strong>INR {{ emi_estimate.monthly|floatformat:0 }}</strong></div>
+          <div><span>Total payment</span><strong>INR {{ emi_estimate.total|floatformat:0 }}</strong></div>
+          <div><span>Total interest</span><strong>INR {{ emi_estimate.interest|floatformat:0 }}</strong></div>
+        </div>
+        <h2 class="mt-4">EMI schedule</h2>
+        {% for emi in application.emi_schedule.all|slice:":6" %}
+          <div class="mini-row"><span>{{ emi.due_date }}</span><strong>INR {{ emi.amount_due }}</strong></div>
+        {% empty %}<p>EMI schedule appears after approval.</p>{% endfor %}
+      </div>
+
+      <div class="panel">
+        <h2>Uploaded documents</h2>
+        {% for doc in application.documents.all %}
+          <div class="document-row">
+            <div><strong>{{ doc.get_document_type_display }}</strong><span>{{ doc.get_status_display }}</span></div>
+            <a href="{{ doc.file.url }}" target="_blank" rel="noopener">Open</a>
+            {% if is_officer_view %}
+            {% if doc.status == 'PENDING' %}
+            <form method="post" action="{% url 'verify_document' doc.pk %}" class="document-form">
+              {% csrf_token %}
+              <select name="status" class="form-select">
+                <option value="PENDING" {% if doc.status == 'PENDING' %}selected{% endif %}> Pending </option>
+                <option value="VERIFIED"> Verified </option>
+                <option value="REJECTED"> Rejected </option>
+              </select>
+
+              <input name="remarks"
+                  class="form-control"
+                  value="{{ doc.remarks }}"
+                  placeholder="Remarks">
+
+              <button class="btn btn-sm btn-outline-primary"> Save </button>
+
+            </form>
+
+            {% else %}
+
+            <div class="finalized-doc-status">
+              <span class="badge {% if doc.status == 'VERIFIED' %}bg-success{% else %}bg-danger{% endif %}">
+                {{ doc.get_status_display }}
+              </span>
+
+              <small> Document verification finalized </small>
+
+            </div>
+
+{% endif %}
+{% endif %}
+
+          </div>
+        {% empty %}<p>No documents uploaded.</p>{% endfor %}
+
+        {% if not is_officer_view %}
+          <h2 class="mt-4">Upload document</h2>
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button class="btn btn-primary w-100">Upload</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if is_officer_view %}
+      <section class="panel review-panel">
+        {% if application.status == 'APPROVED' or application.status == 'REJECTED' %}
+          <div class="finalized-card">
+            <p class="eyebrow">Decision locked</p>
+            <h2>This application has already been finalized.</h2>
+            <p>Further approval or rejection actions are disabled to preserve the audit trail.</p>
+            <button class="btn btn-secondary" disabled>{{ application.get_status_display }}</button>
+          </div>
+        {% else %}
+          <div class="panel-heading"><div><p class="eyebrow">Officer action</p><h2>Approve or reject application</h2></div></div>
+          <form method="post" action="{% url 'review_application' application.pk %}" class="review-form">
+            {% csrf_token %}
+            {{ review_form.as_p }}
+            <button class="btn btn-primary">Submit review</button>
+          </form>
+        {% endif %}
+      </section>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

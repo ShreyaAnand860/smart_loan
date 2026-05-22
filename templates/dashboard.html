@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | SmartLoan{% endblock %}
+{% block content %}
+{{ status_counts|json_script:"status-data" }}
+{{ type_counts|json_script:"type-data" }}
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="{% url 'landing' %}">SmartLoan</a>
+    <a href="{% url 'dashboard' %}">Overview</a>
+    {% if not is_officer_dashboard %}<a href="{% url 'apply_loan' %}">Apply loan</a>{% endif %}
+    <a href="#applications">Loan Applications</a>
+    <a href="#notifications">Notifications</a>
+  </aside>
+  <main class="dashboard-main">
+    <div class="dash-head">
+      <div>
+        <p class="eyebrow">{{ user.get_role_display }}</p>
+        <h1>{% if is_officer_dashboard %}Loan officer workspace{% else %}Financial command center{% endif %}</h1>
+      </div>
+      {% if not is_officer_dashboard %}<a class="btn btn-primary" href="{% url 'apply_loan' %}">New application</a>{% endif %}
+    </div>
+
+    <div class="metric-grid">
+      <div class="metric-card"><span>Total applications</span><strong>{{ metrics.total }}</strong></div>
+      <div class="metric-card"><span>Approved</span><strong>{{ metrics.approved }}</strong></div>
+      <div class="metric-card"><span>Rejected</span><strong>{{ metrics.rejected }}</strong></div>
+      <div class="metric-card"><span>Requested amount</span><strong>INR {{ metrics.requested_amount|floatformat:0 }}</strong></div>
+    </div>
+
+    <div class="dash-grid">
+      <section class="panel"><h2>Status analytics</h2><canvas id="statusChart" height="180"></canvas></section>
+      <section class="panel"><h2>Loan mix</h2><canvas id="typeChart" height="180"></canvas></section>
+    </div>
+
+    {% if not is_officer_dashboard %}
+      <section class="panel tips-panel">
+        <div class="panel-heading"><div><p class="eyebrow">Financial tips</p><h2>Recommended for this session</h2></div></div>
+        <div class="tips-grid">
+          {% for tip in financial_tips %}
+            <article class="tip-card"><span>0{{ forloop.counter }}</span><h3>{{ tip.title }}</h3><p>{{ tip.body }}</p></article>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    <section id="applications" class="panel">
+      <div class="panel-heading">
+        <div><p class="eyebrow">{% if is_officer_dashboard %}Review queue{% else %}Customer loans{% endif %}</p><h2>Loan Applications</h2></div>
+      </div>
+      <div class="table-responsive">
+        {% if is_officer_dashboard %}
+          <table class="table application-table">
+            <thead><tr><th>Applicant</th><th>Loan Type</th><th>Amount</th><th>Credit</th><th>Risk</th><th>Probability</th><th>Status</th><th>Applied</th><th>Actions</th></tr></thead>
+            <tbody>
+              {% for app in applications %}
+                <tr>
+                  <td>{{ app.full_name }}</td>
+                  <td>{{ app.loan_type.name }}</td>
+                  <td>INR {{ app.loan_amount|floatformat:0 }}</td>
+                  <td>{{ app.cibil_score }}</td>
+                  <td>{{ app.risk_score }}</td>
+                  <td>{{ app.approval_probability }}%</td>
+                  <td><span class="status status-{{ app.status|lower }}">{% if app.status == 'UNDER_REVIEW' %}Pending Review{% else %}{{ app.get_status_display }}{% endif %}</span></td>
+                  <td>{{ app.created_at|date:"M d, Y" }}</td>
+                  <td class="action-cell">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'loan_detail' app.pk %}">View Details</a>
+                    {% if app.status == 'APPROVED' or app.status == 'REJECTED' %}
+                      <button class="btn btn-sm btn-secondary" disabled>Finalized</button>
+                    {% else %}
+                      <form method="post" action="{% url 'review_application' app.pk %}">{% csrf_token %}<input type="hidden" name="decision" value="APPROVED"><input type="hidden" name="officer_remarks" value="Approved from officer dashboard."><button class="btn btn-sm btn-success">Approve</button></form>
+                      <form method="post" action="{% url 'review_application' app.pk %}">{% csrf_token %}<input type="hidden" name="decision" value="REJECTED"><input type="hidden" name="officer_remarks" value="Rejected from officer dashboard."><input type="hidden" name="rejection_reason" value="Your loan application has been rejected."><button class="btn btn-sm btn-danger">Reject</button></form>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="9">No applications are waiting for review.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <table class="table">
+            <thead><tr><th>Applicant</th><th>Loan</th><th>Amount</th><th>Status</th><th>AI probability</th><th>Applied</th><th></th></tr></thead>
+            <tbody>
+              {% for app in applications %}
+                <tr><td>{{ app.full_name }}</td><td>{{ app.loan_type.name }}</td><td>INR {{ app.loan_amount|floatformat:0 }}</td><td><span class="status status-{{ app.status|lower }}">{% if app.status == 'UNDER_REVIEW' %}Pending Review{% else %}{{ app.get_status_display }}{% endif %}</span></td><td>{{ app.approval_probability }}%</td><td>{{ app.created_at|date:"M d, Y" }}</td><td><a href="{% url 'loan_detail' app.pk %}">Open</a></td></tr>
+              {% empty %}
+                <tr><td colspan="7">No applications yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </div>
+    </section>
+
+    <div class="dash-grid">
+      <section id="notifications" class="panel"><h2>Notifications</h2>{% for note in notifications %}<div class="notice"><strong>{{ note.title }}</strong><p>{{ note.message }}</p></div>{% empty %}<p>No notifications.</p>{% endfor %}</section>
+      {% if not is_officer_dashboard %}<section class="panel"><h2>Credit score trend</h2>{% for score in credit_scores %}<div class="mini-row"><span>{{ score.checked_at|date:"M d" }}</span><strong>{{ score.score }}</strong></div>{% empty %}<p>Apply for a loan or add a score to start tracking.</p>{% endfor %}</section>{% endif %}
+    </div>
+  </main>
+</div>
+{% endblock %}
+{% block scripts %}<script>renderDashboardCharts();</script>{% endblock %}

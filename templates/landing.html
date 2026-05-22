@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}SmartLoan | AI Loan Eligibility{% endblock %}
+{% block content %}
+<main>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <p class="eyebrow">AI-powered fintech lending</p>
+        <h1>SmartLoan</h1>
+        <p class="lead">Check eligibility, compare products, apply online, upload documents, and manage repayment from one secure dashboard.</p>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-primary btn-lg" href="{% url 'apply_loan' %}">Apply now</a>
+          <a class="btn btn-outline-light btn-lg" href="#calculator">Calculate EMI</a>
+        </div>
+      </div>
+      <div class="hero-terminal">
+        <div class="risk-ring"><span>82%</span><small>approval probability</small></div>
+        <div class="mini-row"><span>CIBIL</span><strong>784</strong></div>
+        <div class="mini-row"><span>Risk</span><strong class="text-success">Low</strong></div>
+        <div class="mini-row"><span>Next EMI</span><strong>₹24,680</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="loans" class="section">
+    <div class="container">
+      <div class="section-head"><h2>Loan Categories</h2><p>Transparent rates and AI-backed eligibility guidance.</p></div>
+      <div class="loan-grid">
+        {% for loan in loan_types %}
+          <article class="loan-card">
+            <h3>{{ loan.name }}</h3>
+            <p>{{ loan.description }}</p>
+            <div class="d-flex justify-content-between"><span>From {{ loan.base_interest_rate }}%</span><strong>Up to ₹{{ loan.max_amount|floatformat:0 }}</strong></div>
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section id="calculator" class="section tint">
+    <div class="container calc-grid">
+      <div>
+        <h2>EMI Calculator</h2>
+        <div class="panel">
+          <label>Principal</label><input id="principal" class="form-control" type="number" value="1200000">
+          <label>Interest rate</label><input id="rate" class="form-control" type="number" value="10.5" step="0.1">
+          <label>Time in months</label><input id="months" class="form-control" type="number" value="60">
+          <button class="btn btn-primary w-100 mt-3" onclick="calculateEmi()">Calculate</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="metric-xl" id="emiResult">₹25,795</div>
+        <p id="totalResult">Total payment: ₹15,47,700</p>
+        <canvas id="emiChart" height="220"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container feature-grid">
+      <div><h2>Smart dashboard</h2><p>Track status, documents, EMIs, payments, notifications, and credit score trends.</p></div>
+      <div><h2>AI risk scoring</h2><p>Logistic regression and random forest models estimate approval probability and rejection reasons.</p></div>
+      <div><h2>Officer workflow</h2><p>Loan officers review applications, verify documents, approve, reject, and add remarks.</p></div>
+    </div>
+  </section>
+
+  <section class="section tint">
+    <div class="container comparison">
+      <h2>Compare Loans</h2>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Loan</th><th>Rate</th><th>Max duration</th><th>Best for</th></tr></thead>
+          <tbody>
+            {% for loan in loan_types %}<tr><td>{{ loan.name }}</td><td>{{ loan.base_interest_rate }}%</td><td>{{ loan.max_duration_months }} months</td><td>Planned {{ loan.name|lower }} needs</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container faq-grid">
+      <div><h2>FAQs</h2><p>Common lending questions, answered plainly.</p></div>
+      <div class="accordion faq-list" id="faq">
+        <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#f1" aria-expanded="true">How is eligibility calculated?</button></h2><div id="f1" class="accordion-collapse collapse show"><div class="accordion-body">SmartLoan evaluates salary, current obligations, CIBIL score, requested amount, and duration.</div></div></div>
+        <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#f2" aria-expanded="false">Are documents secure?</button></h2><div id="f2" class="accordion-collapse collapse"><div class="accordion-body">Uploads are validated by file type and stored under protected media paths for review.</div></div></div>
+        <div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#f3" aria-expanded="false">Can I compare FAQ answers?</button></h2><div id="f3" class="accordion-collapse collapse"><div class="accordion-body">Yes. FAQ items stay open independently so you can compare answers at the same time.</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container d-flex flex-wrap justify-content-between gap-3">
+      <span>SmartLoan © 2026</span><span>AI eligibility · EMI management · Secure lending APIs</span>
+    </div>
+  </footer>
+</main>
+{% endblock %}
