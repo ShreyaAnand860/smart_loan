@@ -12,7 +12,7 @@ class User(AbstractUser):
         LOAN_OFFICER = "LOAN_OFFICER", "Loan Officer"
 
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.CUSTOMER)
-    phone = models.CharField(max_length=15, blank=True)
+    phone = models.CharField(max_length=10, blank=True)
     address = models.TextField(blank=True)
     pan_number = models.CharField(max_length=10, blank=True)
     aadhaar_number = models.CharField(max_length=12, blank=True)
@@ -51,7 +51,7 @@ class LoanApplication(models.Model):
     loan_type = models.ForeignKey(LoanType, on_delete=models.PROTECT, related_name="applications")
     full_name = models.CharField(max_length=150)
     email = models.EmailField()
-    phone = models.CharField(max_length=15)
+    phone = models.CharField(max_length=10)
     pan_number = models.CharField(
         max_length=10,
         validators=[RegexValidator(r"^[A-Z]{5}[0-9]{4}[A-Z]$", "Enter a valid PAN number.")],
@@ -77,6 +77,7 @@ class LoanApplication(models.Model):
     officer_remarks = models.TextField(blank=True)
     reviewed_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="reviewed_applications")
     reviewed_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
