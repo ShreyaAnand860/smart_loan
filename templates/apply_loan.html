@@ -3,18 +3,54 @@
 {% block content %}
 <section class="form-page">
   <div class="container">
-    <div class="section-head"><h1>Loan application</h1><p>Submit your details for instant AI eligibility scoring and officer review.</p></div>
+    <div class="section-head">
+      <h1>Loan application</h1>
+      <p>Submit your details for instant AI eligibility scoring and officer review.</p>
+    </div>
+
     <form method="post" class="panel form-grid js-submit-once">
       {% csrf_token %}
       {% for field in form %}
         <div class="form-field {% if field.name == 'address' or field.name == 'purpose' %}wide{% endif %}">
           <label>{{ field.label }}</label>
           {{ field }}
-          {% for error in field.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+          {% for error in field.errors %}
+            <small class="text-danger">{{ error }}</small>
+          {% endfor %}
         </div>
       {% endfor %}
-      <button class="btn btn-primary btn-lg wide" type="submit" data-loading-text="Submitting...">Submit application</button>
+
+      <button class="btn btn-primary btn-lg wide" type="submit" data-loading-text="Submitting...">
+        Submit application
+      </button>
     </form>
   </div>
 </section>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const phone = document.getElementById("id_phone");
+    if (phone) {
+        phone.addEventListener("input", function () {
+            this.value = this.value.replace(/\D/g, "").slice(0, 10);
+        });
+    }
+
+    const cibil = document.getElementById("id_cibil_score");
+    if (cibil) {
+        cibil.addEventListener("input", function () {
+            this.value = this.value.replace(/\D/g, "").slice(0, 3);
+        });
+    }
+
+    const tenure = document.getElementById("id_loan_duration_months");
+    if (tenure) {
+        tenure.addEventListener("input", function () {
+            this.value = this.value.replace(/\D/g, "").slice(0, 3);
+        });
+    }
+});
+</script>
+
 {% endblock %}
