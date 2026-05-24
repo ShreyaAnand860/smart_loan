@@ -59,6 +59,70 @@ class LoanApplicationForm(forms.ModelForm):
             "reviewed_at",
         ]
 
+        widgets = {
+            "phone": forms.TextInput(
+                attrs={
+                    "maxlength": "10",
+                    "pattern": "[0-9]{10}",
+                    "inputmode": "numeric",
+                    "placeholder": "Enter 10-digit mobile number",
+                }
+            ),
+
+            "cibil_score": forms.NumberInput(
+                attrs={
+                    "min": "300",
+                    "max": "900",
+                    "maxlength": "3",
+                }
+            ),
+
+            "loan_duration_months": forms.NumberInput(
+                attrs={
+                    "min": "6",
+                    "max": "360",
+                    "maxlength": "3",
+                }
+            ),
+        }
+
+    def clean_phone(self):
+        phone = str(self.cleaned_data.get("phone", "")).strip()
+
+        if not phone.isdigit():
+            raise forms.ValidationError("Phone number must contain only digits.")
+
+        if len(phone) != 10:
+            raise forms.ValidationError("Phone number must be exactly 10 digits.")
+
+        return phone
+
+    def clean_cibil_score(self):
+        score = self.cleaned_data.get("cibil_score")
+
+        if score is None:
+            return score
+
+        if score < 300 or score > 900:
+            raise forms.ValidationError(
+                "CIBIL score must be between 300 and 900."
+            )
+
+        return score
+
+    def clean_loan_duration_months(self):
+        tenure = self.cleaned_data.get("loan_duration_months")
+
+        if tenure is None:
+            return tenure
+
+        if tenure < 6 or tenure > 360:
+            raise forms.ValidationError(
+                "Loan tenure must be between 6 and 360 months."
+            )
+
+        return tenure
+
 
 class DocumentUploadForm(forms.ModelForm):
     class Meta:
